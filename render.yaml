@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: cryptoplace-backend
+    runtime: java
+    plan: free
+    buildCommand: cd cryptoplace-backend && ./mvnw clean package -DskipTests
+    startCommand: cd cryptoplace-backend && java -jar target/cryptoplace-backend-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cryptoplace-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://cryptoplace-frontend.vercel.app,https://localhost:3000,https://localhost:5173
+
+databases:
+  - name: cryptoplace-db
+    plan: free
+    databaseName: cryptoplace
+    user: cryptoplace_user 
