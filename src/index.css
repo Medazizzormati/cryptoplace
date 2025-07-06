@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Outfit", sans-serif;
+}
+
+body{
+  overflow-x: hidden;
+}
+
+a{
+  text-decoration: none;
+  color: inherit;
+}
+
+.app{
+  min-height: 100vh;
+  color: white;
+  background: linear-gradient(#0b004e,#1d152f,#002834);
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Amélioration de la responsivité globale */
+@media (max-width: 768px) {
+  .app {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    font-size: 13px;
+  }
+}
+
+/* Utilitaires pour les éléments cachés sur mobile */
+.mobile-hidden {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+/* Amélioration du scroll horizontal */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4500c6 #1d152f;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1d152f;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #4500c6;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #7927ff;
+}

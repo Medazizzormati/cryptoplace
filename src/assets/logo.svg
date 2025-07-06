@@ -1,0 +1,35 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7927ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9d4eff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle -->
+  <circle cx="20" cy="20" r="18" fill="url(#grad1)" stroke="#ffffff" stroke-width="2"/>
+  
+  <!-- Crypto symbol design -->
+  <path d="M20 6 L30 14 L26 16 L20 12 L14 16 L10 14 L20 6 Z" fill="#ffffff" opacity="0.95"/>
+  <path d="M20 34 L10 26 L14 24 L20 28 L26 24 L30 26 L20 34 Z" fill="#ffffff" opacity="0.95"/>
+  <rect x="18" y="12" width="4" height="16" fill="#ffffff" opacity="0.8"/>
+  
+  <!-- Accent elements -->
+  <circle cx="12" cy="12" r="2" fill="#ffffff" opacity="0.7"/>
+  <circle cx="28" cy="12" r="2" fill="#ffffff" opacity="0.7"/>
+  <circle cx="12" cy="28" r="2" fill="#ffffff" opacity="0.7"/>
+  <circle cx="28" cy="28" r="2" fill="#ffffff" opacity="0.7"/>
+  
+  <!-- Modern text alternative - geometric shapes -->
+  <rect x="45" y="15" width="3" height="10" fill="#ffffff" opacity="0.9"/>
+  <rect x="50" y="12" width="3" height="16" fill="#ffffff" opacity="0.9"/>
+  <rect x="55" y="10" width="3" height="20" fill="#ffffff" opacity="0.9"/>
+  <rect x="60" y="8" width="3" height="24" fill="#ffffff" opacity="0.9"/>
+  <rect x="65" y="10" width="3" height="20" fill="#ffffff" opacity="0.9"/>
+  <rect x="70" y="12" width="3" height="16" fill="#ffffff" opacity="0.9"/>
+  <rect x="75" y="15" width="3" height="10" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Abstract wave pattern -->
+  <path d="M85 20 Q90 10 95 20 T105 20" stroke="#ffffff" stroke-width="3" fill="none" opacity="0.8"/>
+  <path d="M85 25 Q90 15 95 25 T105 25" stroke="#ffffff" stroke-width="2" fill="none" opacity="0.6"/>
+</svg> 
