@@ -1,11 +1,28 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Fonction utilitaire pour vérifier si un token est valide
+const isTokenValid = (token) => {
+  if (!token) return false;
+  
+  try {
+    // Pour un vrai JWT, on devrait décoder et vérifier l'expiration
+    // Ici on fait une vérification simple
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const isExpired = payload.exp * 1000 < Date.now();
+    return !isExpired;
+  } catch (error) {
+    // Si ce n'est pas un JWT valide (mode demo), on accepte
+    return token.startsWith('demo-') || token.length > 10;
+  }
+};
+
+// État initial
 const initialState = {
   user: null,
-  token: localStorage.getItem('token'),
-  refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: !!localStorage.getItem('token'),
-  loading: false,
+  token: null,
+  refreshToken: null,
+  isAuthenticated: false,
+  loading: true, // true au démarrage pour vérifier l'auth
   error: null,
 };
 
@@ -13,38 +30,57 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    // Set loading state
+    // Action pour vérifier le statut d'authentification au démarrage
+    checkAuthStatus: (state) => {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+
+      if (storedToken && isTokenValid(storedToken)) {
+        state.token = storedToken;
+        state.refreshToken = storedRefreshToken;
+        state.user = storedUser ? JSON.parse(storedUser) : null;
+        state.isAuthenticated = true;
+      } else {
+        // Token invalide ou expiré, nettoyer le localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        state.token = null;
+        state.user = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
+      }
+      
+      state.loading = false;
+    },
+
+    // Début du processus de connexion
     setLoading: (state, action) => {
       state.loading = action.payload;
-    },
-    
-    // Set error
-    setError: (state, action) => {
-      state.error = action.payload;
-    },
-    
-    // Clear error
-    clearError: (state) => {
       state.error = null;
     },
-    
-    // Login success
+
+    // Connexion réussie
     loginSuccess: (state, action) => {
-      const { token, refreshToken, user } = action.payload;
+      const { user, token, refreshToken } = action.payload;
+      
       state.user = user;
       state.token = token;
       state.refreshToken = refreshToken;
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
-      
-      // Store in localStorage
+
+      // Sauvegarder dans localStorage
       localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
     },
-    
-    // Login failure
+
+    // Échec de connexion
     loginFailure: (state, action) => {
       state.user = null;
       state.token = null;
@@ -52,14 +88,14 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.error = action.payload;
-      
-      // Clear localStorage
+
+      // Nettoyer le localStorage
       localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
     },
-    
-    // Logout
+
+    // Déconnexion
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -67,63 +103,51 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
-      
-      // Clear localStorage
+
+      // Nettoyer le localStorage
       localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
     },
-    
-    // Update user info
-    updateUser: (state, action) => {
-      state.user = { ...state.user, ...action.payload };
-      localStorage.setItem('user', JSON.stringify(state.user));
+
+    // Nettoyer les erreurs
+    clearError: (state) => {
+      state.error = null;
     },
-    
-    // Refresh token success
+
+    // Mettre à jour le profil utilisateur
+    updateProfile: (state, action) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+        localStorage.setItem('user', JSON.stringify(state.user));
+      }
+    },
+
+    // Renouveler le token
     refreshTokenSuccess: (state, action) => {
       const { token, refreshToken } = action.payload;
       state.token = token;
-      state.refreshToken = refreshToken;
-      
-      // Update localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('refreshToken', refreshToken);
-    },
-    
-    // Initialize auth from localStorage
-    initializeAuth: (state) => {
-      const token = localStorage.getItem('token');
-      const refreshToken = localStorage.getItem('refreshToken');
-      const user = localStorage.getItem('user');
-      
-      if (token && refreshToken) {
-        state.token = token;
+      if (refreshToken) {
         state.refreshToken = refreshToken;
-        state.isAuthenticated = true;
-        
-        if (user) {
-          try {
-            state.user = JSON.parse(user);
-          } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
-          }
-        }
+      }
+      
+      localStorage.setItem('token', token);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
       }
     },
   },
 });
 
 export const {
+  checkAuthStatus,
   setLoading,
-  setError,
-  clearError,
   loginSuccess,
   loginFailure,
   logout,
-  updateUser,
+  clearError,
+  updateProfile,
   refreshTokenSuccess,
-  initializeAuth,
 } = authSlice.actions;
 
 export default authSlice.reducer; 

@@ -1,14 +1,16 @@
 import React, { useContext } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { logout } from '../../store/slices/authSlice'
 import './Navbar.css'
 import logo from '../../assets/logo.png'
 import arrow_icon from '../../assets/arrow_icon.png'
 import { CoinContext } from '../../context/CoinContext'
-import { useAuth } from '../../context/AuthContext'
 import { Link } from 'react-router-dom'
 
 const Navbar = () => {
   const { setCurrency } = useContext(CoinContext)
-  const { isAuthenticated, user, logout } = useAuth()
+  const dispatch = useDispatch()
+  const { isAuthenticated, user } = useSelector(state => state.auth)
 
   const currencyHandler = (event) => {
     switch (event.target.value) {
@@ -32,7 +34,7 @@ const Navbar = () => {
   }
 
   const handleLogout = () => {
-    logout()
+    dispatch(logout())
   }
 
   return (
@@ -40,9 +42,9 @@ const Navbar = () => {
       <Link to={'/'}>
         <img src={logo} alt='' className='logo' />
       </Link>
-      <ul >
+      <ul>
         <Link to={'/'}><li>Home</li></Link>
-        {isAuthenticated() && (
+        {isAuthenticated && (
           <Link to={'/dashboard'}><li>Dashboard</li></Link>
         )}
         <Link to={'/features'}><li>Features</li></Link>
@@ -50,13 +52,13 @@ const Navbar = () => {
         <Link to={'/blog'}><li>Blog</li></Link>
       </ul>
       <div className='nav-right'>
-        <select onChange={currencyHandler} >
+        <select onChange={currencyHandler}>
           <option value="usd">USD</option>
           <option value="eur">EUR</option>
           <option value="tnd">TND</option>
         </select>
         
-        {isAuthenticated() ? (
+        {isAuthenticated ? (
           <div className='auth-buttons'>
             <Link to={'/profile'} className='profile-link'>
               👤 {user?.username || 'Profile'}

@@ -1,9 +1,8 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-const ProtectedRoute = ({ children }) => {
-  const location = useLocation();
+const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useSelector(state => state.auth);
 
   // Afficher un loading pendant la vérification de l'auth
@@ -16,18 +15,18 @@ const ProtectedRoute = ({ children }) => {
         minHeight: '100vh',
         fontSize: '18px'
       }}>
-        <div>Vérification de l'authentification...</div>
+        <div>Chargement...</div>
       </div>
     );
   }
 
-  // Si non authentifié, rediriger vers login avec l'état de la page demandée
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // Si déjà authentifié, rediriger vers le dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
-  // Si authentifié, afficher le contenu protégé
+  // Sinon, afficher la page publique (login, signup, etc.)
   return children;
 };
 
-export default ProtectedRoute; 
+export default PublicRoute; 
