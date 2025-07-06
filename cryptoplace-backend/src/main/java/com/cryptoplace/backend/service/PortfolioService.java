@@ -4,8 +4,10 @@ import com.cryptoplace.backend.model.Portfolio;
 import com.cryptoplace.backend.model.Transaction;
 import com.cryptoplace.backend.model.TransactionType;
 import com.cryptoplace.backend.model.TransactionStatus;
+import com.cryptoplace.backend.model.User;
 import com.cryptoplace.backend.repository.PortfolioRepository;
 import com.cryptoplace.backend.repository.TransactionRepository;
+import com.cryptoplace.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,9 @@ public class PortfolioService {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public List<Portfolio> getPortfolioByUserId(Long userId) {
         return portfolioRepository.findByUserId(userId);
     }
@@ -37,9 +42,9 @@ public class PortfolioService {
         int totalHoldings = holdings.size();
         
         for (Portfolio holding : holdings) {
-            BigDecimal currentValue = holding.getAmount().multiply(holding.getAveragePrice());
+            BigDecimal currentValue = holding.getQuantity().multiply(holding.getCurrentPrice() != null ? holding.getCurrentPrice() : holding.getAveragePrice());
             totalValue = totalValue.add(currentValue);
-            totalCost = totalCost.add(holding.getAmount().multiply(holding.getAveragePrice()));
+            totalCost = totalCost.add(holding.getQuantity().multiply(holding.getAveragePrice()));
         }
         
         BigDecimal profit = totalValue.subtract(totalCost);
@@ -57,19 +62,23 @@ public class PortfolioService {
     }
 
     public List<Transaction> getTransactionsByUserId(Long userId) {
-        return transactionRepository.findByUserIdOrderByTimestampDesc(userId);
+        return transactionRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
     public Transaction buyCryptocurrency(Long userId, String symbol, Double amount, Double price) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        
         // Create transaction
         Transaction transaction = new Transaction();
-        transaction.setUserId(userId);
-        transaction.setSymbol(symbol);
-        transaction.setAmount(BigDecimal.valueOf(amount));
+        transaction.setUser(user);
+        transaction.setCryptoSymbol(symbol);
+        transaction.setCryptoName(symbol); // For now, using symbol as name
+        transaction.setQuantity(BigDecimal.valueOf(amount));
         transaction.setPrice(BigDecimal.valueOf(price));
-        transaction.setType(TransactionType.BUY);
-        transaction.setStatus(TransactionStatus.COMPLETED);
-        transaction.setTimestamp(LocalDateTime.now());
+        transaction.setTotalAmount(BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(price)));
+        transaction.setTransactionType(TransactionType.BUY);
+        transaction.setStatus(TransactionStatus.CONFIRMED);
+        transaction.setExecutedAt(LocalDateTime.now());
         
         transaction = transactionRepository.save(transaction);
         
@@ -81,20 +90,24 @@ public class PortfolioService {
 
     public Transaction sellCryptocurrency(Long userId, String symbol, Double amount, Double price) {
         // Check if user has enough balance
-        Portfolio holding = portfolioRepository.findByUserIdAndSymbol(userId, symbol).orElse(null);
-        if (holding == null || holding.getAmount().compareTo(BigDecimal.valueOf(amount)) < 0) {
+        Portfolio holding = portfolioRepository.findByUserIdAndCryptoSymbol(userId, symbol).orElse(null);
+        if (holding == null || holding.getQuantity().compareTo(BigDecimal.valueOf(amount)) < 0) {
             throw new RuntimeException("Insufficient balance for " + symbol);
         }
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         
         // Create transaction
         Transaction transaction = new Transaction();
-        transaction.setUserId(userId);
-        transaction.setSymbol(symbol);
-        transaction.setAmount(BigDecimal.valueOf(amount));
+        transaction.setUser(user);
+        transaction.setCryptoSymbol(symbol);
+        transaction.setCryptoName(symbol); // For now, using symbol as name
+        transaction.setQuantity(BigDecimal.valueOf(amount));
         transaction.setPrice(BigDecimal.valueOf(price));
-        transaction.setType(TransactionType.SELL);
-        transaction.setStatus(TransactionStatus.COMPLETED);
-        transaction.setTimestamp(LocalDateTime.now());
+        transaction.setTotalAmount(BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(price)));
+        transaction.setTransactionType(TransactionType.SELL);
+        transaction.setStatus(TransactionStatus.CONFIRMED);
+        transaction.setExecutedAt(LocalDateTime.now());
         
         transaction = transactionRepository.save(transaction);
         
@@ -105,60 +118,62 @@ public class PortfolioService {
     }
 
     private void updatePortfolioAfterBuy(Long userId, String symbol, Double amount, Double price) {
-        Portfolio holding = portfolioRepository.findByUserIdAndSymbol(userId, symbol).orElse(null);
+        Portfolio holding = portfolioRepository.findByUserIdAndCryptoSymbol(userId, symbol).orElse(null);
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         
         if (holding == null) {
             // Create new holding
             holding = new Portfolio();
-            holding.setUserId(userId);
-            holding.setSymbol(symbol);
-            holding.setAmount(BigDecimal.valueOf(amount));
+            holding.setUser(user);
+            holding.setCryptoSymbol(symbol);
+            holding.setCryptoName(symbol); // For now, using symbol as name
+            holding.setQuantity(BigDecimal.valueOf(amount));
             holding.setAveragePrice(BigDecimal.valueOf(price));
-            holding.setLastUpdated(LocalDateTime.now());
+            holding.setUpdatedAt(LocalDateTime.now());
         } else {
             // Update existing holding
-            BigDecimal totalCost = holding.getAmount().multiply(holding.getAveragePrice())
+            BigDecimal totalCost = holding.getQuantity().multiply(holding.getAveragePrice())
                 .add(BigDecimal.valueOf(amount).multiply(BigDecimal.valueOf(price)));
-            BigDecimal totalAmount = holding.getAmount().add(BigDecimal.valueOf(amount));
+            BigDecimal totalAmount = holding.getQuantity().add(BigDecimal.valueOf(amount));
             
             holding.setAveragePrice(totalCost.divide(totalAmount, 8, BigDecimal.ROUND_HALF_UP));
-            holding.setAmount(totalAmount);
-            holding.setLastUpdated(LocalDateTime.now());
+            holding.setQuantity(totalAmount);
+            holding.setUpdatedAt(LocalDateTime.now());
         }
         
         portfolioRepository.save(holding);
     }
 
     private void updatePortfolioAfterSell(Long userId, String symbol, Double amount, Double price) {
-        Portfolio holding = portfolioRepository.findByUserIdAndSymbol(userId, symbol).orElse(null);
+        Portfolio holding = portfolioRepository.findByUserIdAndCryptoSymbol(userId, symbol).orElse(null);
         
         if (holding != null) {
-            BigDecimal newAmount = holding.getAmount().subtract(BigDecimal.valueOf(amount));
+            BigDecimal newAmount = holding.getQuantity().subtract(BigDecimal.valueOf(amount));
             
             if (newAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 // Remove holding if amount becomes zero or negative
                 portfolioRepository.delete(holding);
             } else {
                 // Update amount
-                holding.setAmount(newAmount);
-                holding.setLastUpdated(LocalDateTime.now());
+                holding.setQuantity(newAmount);
+                holding.setUpdatedAt(LocalDateTime.now());
                 portfolioRepository.save(holding);
             }
         }
     }
 
     public Map<String, Object> getPortfolioPerformance(Long userId) {
-        List<Transaction> transactions = transactionRepository.findByUserIdOrderByTimestampDesc(userId);
+        List<Transaction> transactions = transactionRepository.findByUserIdOrderByCreatedAtDesc(userId);
         Map<String, Object> performance = new HashMap<>();
         
         BigDecimal totalInvested = BigDecimal.ZERO;
         BigDecimal totalReturns = BigDecimal.ZERO;
         
         for (Transaction transaction : transactions) {
-            if (transaction.getType() == TransactionType.BUY) {
-                totalInvested = totalInvested.add(transaction.getAmount().multiply(transaction.getPrice()));
-            } else if (transaction.getType() == TransactionType.SELL) {
-                totalReturns = totalReturns.add(transaction.getAmount().multiply(transaction.getPrice()));
+            if (transaction.getTransactionType() == TransactionType.BUY) {
+                totalInvested = totalInvested.add(transaction.getTotalAmount());
+            } else if (transaction.getTransactionType() == TransactionType.SELL) {
+                totalReturns = totalReturns.add(transaction.getTotalAmount());
             }
         }
         
@@ -170,6 +185,6 @@ public class PortfolioService {
     }
 
     public Portfolio getHoldingBySymbol(Long userId, String symbol) {
-        return portfolioRepository.findByUserIdAndSymbol(userId, symbol).orElse(null);
+        return portfolioRepository.findByUserIdAndCryptoSymbol(userId, symbol).orElse(null);
     }
 } 

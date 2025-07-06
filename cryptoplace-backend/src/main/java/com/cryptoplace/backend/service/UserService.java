@@ -129,7 +129,7 @@ public class UserService {
         
         // Delete user's portfolio and transactions
         portfolioRepository.deleteAll(portfolioRepository.findByUserId(userId));
-        transactionRepository.deleteAll(transactionRepository.findByUserIdOrderByTimestampDesc(userId));
+        transactionRepository.deleteAll(transactionRepository.findByUserIdOrderByCreatedAtDesc(userId));
         
         // Delete user
         userRepository.delete(user);

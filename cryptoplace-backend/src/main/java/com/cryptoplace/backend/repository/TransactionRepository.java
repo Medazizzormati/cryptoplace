@@ -13,27 +13,27 @@ import java.util.List;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     
-    List<Transaction> findByUserIdOrderByTimestampDesc(Long userId);
+    List<Transaction> findByUserIdOrderByCreatedAtDesc(Long userId);
     
-    List<Transaction> findByUserIdAndSymbolOrderByTimestampDesc(Long userId, String symbol);
+    List<Transaction> findByUserIdAndCryptoSymbolOrderByCreatedAtDesc(Long userId, String cryptoSymbol);
     
-    List<Transaction> findByUserIdAndTypeOrderByTimestampDesc(Long userId, TransactionType type);
+    List<Transaction> findByUserIdAndTransactionTypeOrderByCreatedAtDesc(Long userId, TransactionType transactionType);
     
-    @Query("SELECT t FROM Transaction t WHERE t.userId = :userId AND t.timestamp BETWEEN :startDate AND :endDate ORDER BY t.timestamp DESC")
-    List<Transaction> findByUserIdAndDateRangeOrderByTimestampDesc(
+    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.createdAt BETWEEN :startDate AND :endDate ORDER BY t.createdAt DESC")
+    List<Transaction> findByUserIdAndDateRangeOrderByCreatedAtDesc(
         @Param("userId") Long userId, 
         @Param("startDate") LocalDateTime startDate, 
         @Param("endDate") LocalDateTime endDate);
     
-    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.userId = :userId")
+    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.user.id = :userId")
     Long countByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT SUM(t.amount * t.price) FROM Transaction t WHERE t.userId = :userId AND t.type = :type")
-    Double getTotalAmountByUserIdAndType(@Param("userId") Long userId, @Param("type") TransactionType type);
+    @Query("SELECT SUM(t.totalAmount) FROM Transaction t WHERE t.user.id = :userId AND t.transactionType = :transactionType")
+    Double getTotalAmountByUserIdAndType(@Param("userId") Long userId, @Param("transactionType") TransactionType transactionType);
     
-    @Query("SELECT t FROM Transaction t WHERE t.userId = :userId ORDER BY t.timestamp DESC")
+    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId ORDER BY t.createdAt DESC")
     List<Transaction> findRecentTransactionsByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT DISTINCT t.symbol FROM Transaction t WHERE t.userId = :userId")
+    @Query("SELECT DISTINCT t.cryptoSymbol FROM Transaction t WHERE t.user.id = :userId")
     List<String> findDistinctSymbolsByUserId(@Param("userId") Long userId);
 } 

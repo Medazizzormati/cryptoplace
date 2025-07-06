@@ -14,17 +14,17 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     
     List<Portfolio> findByUserId(Long userId);
     
-    Optional<Portfolio> findByUserIdAndSymbol(Long userId, String symbol);
+    Optional<Portfolio> findByUserIdAndCryptoSymbol(Long userId, String cryptoSymbol);
     
-    @Query("SELECT p FROM Portfolio p WHERE p.userId = :userId ORDER BY p.amount DESC")
-    List<Portfolio> findByUserIdOrderByAmountDesc(@Param("userId") Long userId);
+    @Query("SELECT p FROM Portfolio p WHERE p.user.id = :userId ORDER BY p.quantity DESC")
+    List<Portfolio> findByUserIdOrderByQuantityDesc(@Param("userId") Long userId);
     
-    @Query("SELECT p FROM Portfolio p WHERE p.userId = :userId AND p.amount > 0")
+    @Query("SELECT p FROM Portfolio p WHERE p.user.id = :userId AND p.quantity > 0")
     List<Portfolio> findActiveHoldingsByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT COUNT(p) FROM Portfolio p WHERE p.userId = :userId")
+    @Query("SELECT COUNT(p) FROM Portfolio p WHERE p.user.id = :userId")
     Long countByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT SUM(p.amount * p.averagePrice) FROM Portfolio p WHERE p.userId = :userId")
+    @Query("SELECT SUM(p.quantity * p.averagePrice) FROM Portfolio p WHERE p.user.id = :userId")
     Double getTotalPortfolioValue(@Param("userId") Long userId);
 } 
